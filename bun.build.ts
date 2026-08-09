@@ -1,9 +1,9 @@
 /// <reference types="bun" />
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const outdir = "dist";
-const entrypoints = [
+const libraryEntrypoints = [
   "./src/index.ts",
   "./src/action-runtime.ts",
   "./src/action-composition.ts",
@@ -13,8 +13,8 @@ const entrypoints = [
 
 await rm(outdir, { recursive: true, force: true });
 
-const result = await Bun.build({
-  entrypoints,
+const library = await Bun.build({
+  entrypoints: libraryEntrypoints,
   outdir,
   target: "node",
   format: "esm",
@@ -26,12 +26,34 @@ const result = await Bun.build({
   },
 });
 
-if (!result.success) {
-  for (const log of result.logs) {
+if (!library.success) {
+  for (const log of library.logs) {
     console.error(log);
   }
   process.exit(1);
 }
+
+const cli = await Bun.build({
+  entrypoints: ["./src/cli/index.ts"],
+  outdir: join(outdir, "cli"),
+  target: "node",
+  format: "esm",
+  packages: "bundle",
+  sourcemap: "linked",
+  naming: {
+    entry: "index.[ext]",
+  },
+  banner: "#!/usr/bin/env node",
+});
+
+if (!cli.success) {
+  for (const log of cli.logs) {
+    console.error(log);
+  }
+  process.exit(1);
+}
+
+await chmod(join(outdir, "cli", "index.js"), 0o755);
 
 // Use the local `typescript` package binary — never `bunx tsc` / `npx tsc`,
 // which can fetch the unrelated `tsc` package from npm.
@@ -65,4 +87,6 @@ for (const name of await readdir(outdir)) {
   }
 }
 
-console.log(`Built ${entrypoints.length} entrypoints -> ${outdir}/`);
+console.log(
+  `Built ${libraryEntrypoints.length} library entrypoints + cli -> ${outdir}/`,
+);

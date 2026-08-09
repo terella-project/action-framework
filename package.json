@@ -1,11 +1,14 @@
 {
   "name": "@terella/action-framework",
   "version": "0.0.1",
-  "description": "Framework for GitHub Actions",
+  "description": "DI-friendly GitHub Actions framework with terella-action CLI for init and build",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "terella-action": "./dist/cli/index.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,6 +24,9 @@
     "README.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "bun bun.build.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
