@@ -1,5 +1,5 @@
-import * as exec from "@actions/exec";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import * as exec from "@actions/exec";
 import { DefaultExecClient } from "./exec-client";
 
 describe("DefaultExecClient", () => {

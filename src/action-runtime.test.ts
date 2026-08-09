@@ -1,5 +1,5 @@
-import * as core from "@actions/core";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import * as core from "@actions/core";
 import { GitHubActionsRuntime, MockActionRuntime } from "./action-runtime";
 
 describe("MockActionRuntime", () => {

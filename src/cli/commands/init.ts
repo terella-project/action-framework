@@ -1,9 +1,9 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve, basename } from "node:path";
-import { createInterface } from "node:readline/promises";
+import { basename, dirname, join, resolve } from "node:path";
 import { stdin as input, stdout as output } from "node:process";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
-import { scaffoldFiles, type ScaffoldOptions } from "../templates/scaffold.js";
+import { type ScaffoldOptions, scaffoldFiles } from "../templates/scaffold.js";
 
 export interface InitOptions {
   readonly dir: string;
@@ -87,7 +87,8 @@ export async function runInit(options: InitOptions): Promise<void> {
   const name = await prompt("Action name", defaultName, interactive);
   const description = await prompt(
     "Description",
-    options.description ?? "A GitHub Action built with @terella/action-framework",
+    options.description ??
+      "A GitHub Action built with @terella/action-framework",
     interactive,
   );
   const author = options.author

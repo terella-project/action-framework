@@ -5,7 +5,7 @@
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
     "lib": ["ES2022"],
-    "types": ["node"],
+    "types": ["node", "bun"],
     "strict": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,

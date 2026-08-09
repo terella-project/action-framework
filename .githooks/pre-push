@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Pre-push hook: typecheck + test + build.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "[pre-push] typecheck"
+bun run typecheck
+
+echo "[pre-push] test"
+bun run test
+
+echo "[pre-push] build"
+bun run build
