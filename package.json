@@ -31,7 +31,7 @@
     "build": "bun bun.build.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
     "typecheck:examples": "tsc --noEmit -p examples/tsconfig.json",
-    "test": "bun test ./examples/*.test.ts",
+    "test": "bun test ./examples ./src",
     "prepublishOnly": "npm run build",
     "test:local": "local-action run ."
   },
