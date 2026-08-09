@@ -1,0 +1,9 @@
+node_modules/
+dist/
+lib/
+*.log
+*.tgz
+.idea/
+.env
+.env.*
+!.env.example

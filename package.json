@@ -1,0 +1,52 @@
+{
+  "name": "@terella/action-framework",
+  "version": "0.0.1",
+  "description": "Framework for GitHub Actions",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun bun.build.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
+    "typecheck:examples": "tsc --noEmit -p examples/tsconfig.json",
+    "test": "bun test ./examples/*.test.ts",
+    "prepublishOnly": "npm run build",
+    "test:local": "local-action run ."
+  },
+  "author": "github.com/terella-project",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terella-project/action-framework.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^3.0.0",
+    "@actions/github": "^9.1.1",
+    "@di-framework/core": "^4.3.1"
+  },
+  "devDependencies": {
+    "@github/local-action": "^1.5.1",
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3"
+  }
+}
