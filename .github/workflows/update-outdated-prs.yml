@@ -17,7 +17,10 @@ jobs:
     steps:
       - name: Update out-of-date PR branches
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          # RELEASE_TOKEN (fine-grained PAT) lacked pull-request comment
+          # permission and failed @dependabot rebase. GITHUB_TOKEN works
+          # with this workflow's pull-requests: write permission.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
