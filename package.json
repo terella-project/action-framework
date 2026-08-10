@@ -48,16 +48,16 @@
     "access": "public"
   },
   "dependencies": {
-    "@actions/core": "^1.11.1",
+    "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.1.1",
     "@di-framework/core": "^4.3.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
-    "@github/local-action": "^1.5.1",
+    "@github/local-action": "^7.0.1",
     "@types/bun": "^1.3.14",
-    "@types/node": "^20.19.43",
-    "typescript": "^5.9.3"
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
   }
 }
