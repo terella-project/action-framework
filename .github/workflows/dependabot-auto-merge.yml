@@ -15,7 +15,9 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
-          github-token: ${{ secrets.RELEASE_TOKEN }}
+          # Dependabot PRs only receive Dependabot secrets, not Actions
+          # secrets like RELEASE_TOKEN — use the workflow GITHUB_TOKEN.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for non-major updates
         if: >
@@ -24,4 +26,4 @@ jobs:
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
