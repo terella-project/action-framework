@@ -23,7 +23,6 @@ concurrency:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   tag:
@@ -103,9 +102,8 @@ jobs:
           # (PAT lacks createPullRequest; Actions create-PR is disabled).
           git push origin HEAD:main
 
-      - name: Tag and dispatch Publish
+      - name: Tag release
         env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           NEXT: ${{ steps.version.outputs.next }}
           CURRENT: ${{ steps.version.outputs.current }}
         run: |
@@ -117,13 +115,11 @@ jobs:
           if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
             echo "Tag v$NEXT already exists"
           else
+            # RELEASE_TOKEN push triggers publish.yml on: push: tags
             git tag -a "v$NEXT" -m "Release v$NEXT"
             git push origin "v$NEXT"
             echo "Tagged v$NEXT"
           fi
 
-          # GITHUB_TOKEN tag pushes do not fire `on: push: tags`
-          gh workflow run publish.yml --ref "v${NEXT}"
-
           echo "### Released \`v$NEXT\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Bumped from \`$CURRENT\`. Publish workflow dispatched." >> "$GITHUB_STEP_SUMMARY"
+          echo "Bumped from \`$CURRENT\`. Publish workflow triggered by tag push." >> "$GITHUB_STEP_SUMMARY"
