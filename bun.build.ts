@@ -1,6 +1,6 @@
 /// <reference types="bun" />
 import { chmod, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const outdir = "dist";
 const libraryEntrypoints = [
@@ -57,7 +57,13 @@ await chmod(join(outdir, "cli", "index.js"), 0o755);
 
 // Use the local `typescript` package binary — never `bunx tsc` / `npx tsc`,
 // which can fetch the unrelated `tsc` package from npm.
-const tscBin = Bun.resolveSync("typescript/bin/tsc", import.meta.dir);
+// Resolve via package.json (exported in TS 7+); `typescript/bin/tsc` is not
+// in the package "exports" map so Bun.resolveSync rejects it.
+const tscBin = join(
+  dirname(Bun.resolveSync("typescript/package.json", import.meta.dir)),
+  "bin",
+  "tsc",
+);
 const tsc = Bun.spawn([tscBin, "-p", "tsconfig.emit.json"], {
   stdout: "inherit",
   stderr: "inherit",
