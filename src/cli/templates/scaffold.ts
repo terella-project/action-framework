@@ -218,9 +218,7 @@ function toWorkflowFileName(name: string): string {
 
 export function githubWorkflowYml(options: ScaffoldOptions): string {
   const withBlock = options.sampleInput
-    ? `
-        with:
-          name: Alice`
+    ? `\n        with:\n          name: Alice`
     : "";
 
   return `name: ${options.name}
@@ -235,6 +233,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+
+      - uses: terella-project/build-actions@v1
+        with:
+          path: .
+
       - uses: ./${withBlock}
 `;
 }

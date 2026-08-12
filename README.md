@@ -41,6 +41,35 @@ export class MyActionWorkflow {
 
 Wire composition in `src/index.ts`, change inputs in `action.yml`, rebuild.
 
+## Run actions in GitHub Actions
+
+Actions are TypeScript that must be bundled to `dist/index.js` before GitHub
+Actions can run them. Use [`terella-project/build-actions`](https://github.com/terella-project/build-actions)
+in your workflow to build all actions in one step:
+
+```yaml
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+
+      # Build all actions under actions/
+      - uses: terella-project/build-actions@v1
+        with:
+          path: actions
+
+      # Now use them
+      - uses: ./actions/my-action
+```
+
+`build-actions` installs Bun if missing, finds every `action.yml` under the
+given path, and bundles each to `dist/index.js`.
+
 ## Ship many
 
 Same layout every time — good for fleets and reviewable diffs:
@@ -79,6 +108,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+
+      - uses: terella-project/build-actions@v1
+        with:
+          path: .
+
       - uses: ./
         with:
           name: Alice
