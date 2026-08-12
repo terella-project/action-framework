@@ -1,0 +1,5 @@
+name: "supervisor"
+description: "Run the weekly unsticker Cursor agent"
+runs:
+  using: "node20"
+  main: "dist/index.js"

@@ -28,8 +28,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Typecheck
-        run: bun run typecheck
+      - name: Build actions
+        uses: terella-project/build-actions@v1
+        with:
+          path: actions
 
-      - name: Test
-        run: bun run test
+      - uses: ./actions/ci

@@ -43,83 +43,18 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Compute next version
-        id: version
-        run: |
-          set -euo pipefail
-          CURRENT=$(node -p "require('./package.json').version")
-          if [ -z "$CURRENT" ] || [ "$CURRENT" = "undefined" ]; then
-            echo "::error::could not read version from package.json"
-            exit 1
-          fi
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-          BUMP="${{ github.event.inputs.bump || 'patch' }}"
-          IFS=. read -r MAJOR MINOR PATCH <<< "$CURRENT"
-          PATCH=${PATCH%%-*}
+      - run: bun install --frozen-lockfile
 
-          case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-            *) echo "::error::unknown bump type: $BUMP"; exit 1 ;;
-          esac
+      - name: Build actions
+        uses: terella-project/build-actions@v1
+        with:
+          path: actions
 
-          NEXT="$MAJOR.$MINOR.$PATCH"
-
-          if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
-            echo "::error::tag v$NEXT already exists"
-            exit 1
-          fi
-
-          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-          echo "next=$NEXT"       >> "$GITHUB_OUTPUT"
-          echo "Bumping $CURRENT -> $NEXT ($BUMP)"
-
-      - name: Bump version on main
-        env:
-          NEXT: ${{ steps.version.outputs.next }}
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git fetch origin main
-          git checkout -B main origin/main
-
-          npm version "$NEXT" --no-git-tag-version --allow-same-version
-
-          git add package.json
-          git add -u bun.lock package-lock.json yarn.lock pnpm-lock.yaml 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "::error::nothing to commit for v$NEXT (package.json already at that version?)"
-            exit 1
-          fi
-          git commit -m "chore(release): v$NEXT"
-
-          # RELEASE_TOKEN is an admin PAT and can bypass the PR-only ruleset.
-          # Neither RELEASE_TOKEN nor GITHUB_TOKEN can open PRs in this repo
-          # (PAT lacks createPullRequest; Actions create-PR is disabled).
-          git push origin HEAD:main
-
-      - name: Tag release
-        env:
-          NEXT: ${{ steps.version.outputs.next }}
-          CURRENT: ${{ steps.version.outputs.current }}
-        run: |
-          set -euo pipefail
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
-
-          if git rev-parse -q --verify "refs/tags/v$NEXT" >/dev/null; then
-            echo "Tag v$NEXT already exists"
-          else
-            # RELEASE_TOKEN push triggers publish.yml on: push: tags
-            git tag -a "v$NEXT" -m "Release v$NEXT"
-            git push origin "v$NEXT"
-            echo "Tagged v$NEXT"
-          fi
-
-          echo "### Released \`v$NEXT\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Bumped from \`$CURRENT\`. Publish workflow triggered by tag push." >> "$GITHUB_STEP_SUMMARY"
+      - name: Bump version and tag
+        uses: ./actions/auto-tag
+        with:
+          bump: ${{ github.event.inputs.bump || 'patch' }}

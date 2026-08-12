@@ -1,0 +1,30 @@
+name: "codeql"
+description: "Validate and normalise CodeQL analysis configuration for one matrix entry"
+inputs:
+  language:
+    description: "CodeQL language identifier (e.g. actions, javascript-typescript)"
+    required: true
+  build-mode:
+    description: "Build mode (none, autobuild, manual). Defaults to none for interpreted languages."
+    required: false
+    default: ""
+  queries:
+    description: "Query suite to run"
+    required: false
+    default: "security-and-quality"
+  category:
+    description: "Analysis category. Defaults to /language:<language>"
+    required: false
+    default: ""
+outputs:
+  language:
+    description: "Validated language"
+  build-mode:
+    description: "Resolved build mode"
+  queries:
+    description: "Query suite"
+  category:
+    description: "Analysis category string"
+runs:
+  using: "node20"
+  main: "dist/index.js"

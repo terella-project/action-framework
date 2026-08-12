@@ -1,0 +1,13 @@
+name: "auto-tag"
+description: "Bump version, commit to main, and tag a release"
+inputs:
+  bump:
+    description: "Which component to bump (patch, minor, major)"
+    required: false
+    default: "patch"
+outputs:
+  next-version:
+    description: "The new version that was tagged"
+runs:
+  using: "node20"
+  main: "dist/index.js"

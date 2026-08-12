@@ -1,0 +1,5 @@
+name: "publish"
+description: "Verify tag version, run tests, and publish to npm via OIDC trusted publishing"
+runs:
+  using: "node20"
+  main: "dist/index.js"

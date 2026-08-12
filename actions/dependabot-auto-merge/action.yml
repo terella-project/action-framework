@@ -1,0 +1,18 @@
+name: "dependabot-auto-merge"
+description: "Enable auto-merge for non-major Dependabot PRs"
+inputs:
+  dependency-group:
+    description: "Dependabot dependency group name (from fetch-metadata)"
+    required: false
+    default: ""
+  update-type:
+    description: "Dependabot update type (from fetch-metadata)"
+    required: false
+    default: ""
+  pr-url:
+    description: "The PR HTML URL to auto-merge"
+    required: false
+    default: ""
+runs:
+  using: "node20"
+  main: "dist/index.js"

@@ -1,0 +1,5 @@
+name: "ci"
+description: "Run typecheck and tests"
+runs:
+  using: "node20"
+  main: "dist/index.js"

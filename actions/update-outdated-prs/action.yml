@@ -1,0 +1,5 @@
+name: "update-outdated-prs"
+description: "Update out-of-date PR branches (Dependabot rebase or gh pr update-branch)"
+runs:
+  using: "node20"
+  main: "dist/index.js"

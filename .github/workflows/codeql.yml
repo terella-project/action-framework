@@ -27,22 +27,37 @@ jobs:
       matrix:
         include:
           - language: actions
-            build-mode: none
           - language: javascript-typescript
-            build-mode: none
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Build actions
+        uses: terella-project/build-actions@v1
+        with:
+          path: actions
+
+      - name: Configure CodeQL
+        id: config
+        uses: ./actions/codeql
+        with:
+          language: ${{ matrix.language }}
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-          queries: security-and-quality
+          languages: ${{ steps.config.outputs.language }}
+          build-mode: ${{ steps.config.outputs.build-mode }}
+          queries: ${{ steps.config.outputs.queries }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
-          category: '/language:${{ matrix.language }}'
+          category: ${{ steps.config.outputs.category }}
