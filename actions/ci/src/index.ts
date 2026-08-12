@@ -1,9 +1,15 @@
-import { createActionComposition, runComposedAction } from "../../../src/index";
+import {
+  createActionComposition,
+  DefaultExecClient,
+  runComposedAction,
+} from "../../../src/index";
 import { CiWorkflow } from "./workflow.js";
 
 const composition = createActionComposition({
   githubContext: { repo: { owner: "owner", repo: "repo" } },
-  dependencies: {},
+  dependencies: {
+    createExecClient: () => new DefaultExecClient(),
+  },
 });
 
 runComposedAction(composition, CiWorkflow).catch((error: unknown) => {
