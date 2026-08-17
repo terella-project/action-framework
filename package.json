@@ -1,6 +1,6 @@
 {
   "name": "@terella/action-framework",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "DI-friendly GitHub Actions framework with terella-action CLI for init and build",
   "type": "module",
   "main": "./dist/index.js",
