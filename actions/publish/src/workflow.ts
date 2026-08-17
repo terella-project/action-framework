@@ -61,6 +61,9 @@ export class PublishWorkflow {
   }
 
   private async publish(exec: ExecClient): Promise<void> {
+    this.runtime.info("Building package so npm sees dist before pack...");
+    await exec.exec("bun", ["run", "build"]);
+
     this.runtime.info("Publishing via npm trusted publishing (OIDC)...");
     await exec.exec("npm", ["publish", "--access", "public"]);
     this.runtime.info("Published.");

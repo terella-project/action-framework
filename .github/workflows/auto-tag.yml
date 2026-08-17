@@ -9,6 +9,10 @@ on:
       - "package-lock.json"
       - "yarn.lock"
       - "pnpm-lock.yaml"
+  # Dependabot auto-merge uses GITHUB_TOKEN, which does not fire push
+  # workflows. pull_request_target closed still runs and can tag.
+  pull_request_target:
+    types: [closed]
   workflow_dispatch:
     inputs:
       bump:
@@ -30,12 +34,17 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      !startsWith(github.event.head_commit.message, 'chore(release):')
+      (github.event_name == 'push' &&
+       !startsWith(github.event.head_commit.message, 'chore(release):')) ||
+      (github.event_name == 'pull_request_target' &&
+       github.event.pull_request.merged == true &&
+       github.event.pull_request.user.login == 'dependabot[bot]')
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: main
           token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Setup Node.js

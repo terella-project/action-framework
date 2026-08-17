@@ -33,6 +33,17 @@ export class AutoTagWorkflow {
     const current = await this.readPackageVersion(exec);
     this.runtime.info(`Current version: ${current}`);
 
+    const eventName = process.env.GITHUB_EVENT_NAME ?? "";
+    if (eventName === "pull_request_target") {
+      const changed = await this.lockfilesChangedSinceTag(exec, current);
+      if (!changed) {
+        this.runtime.info(
+          `No lockfile changes since v${current}; skipping tag.`,
+        );
+        return;
+      }
+    }
+
     const next = this.computeNextVersion(current, bump);
     this.runtime.info(`Next version: ${next} (${bump})`);
 
@@ -59,6 +70,33 @@ export class AutoTagWorkflow {
       throw new Error("could not read version from package.json");
     }
     return version;
+  }
+
+  private async lockfilesChangedSinceTag(
+    exec: ExecClient,
+    current: string,
+  ): Promise<boolean> {
+    const result = await exec.getExecOutput(
+      "git",
+      [
+        "diff",
+        "--quiet",
+        `v${current}`,
+        "--",
+        "bun.lock",
+        "package-lock.json",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+      ],
+      { ignoreReturnCode: true },
+    );
+    // git diff --quiet: 0 = identical, 1 = different, >1 = error
+    if (result.exitCode === 0) return false;
+    if (result.exitCode === 1) return true;
+    this.runtime.info(
+      `Could not compare lockfiles to v${current} (exit ${result.exitCode}); tagging anyway.`,
+    );
+    return true;
   }
 
   private computeNextVersion(current: string, bump: string): string {

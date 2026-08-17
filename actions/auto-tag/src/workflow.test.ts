@@ -158,3 +158,118 @@ test("AutoTagWorkflow fails when tag already exists", async () => {
   ).rejects.toThrow();
   expect(mockRuntime.failedMessage).toBe("tag v1.2.4 already exists");
 });
+
+test("AutoTagWorkflow skips pull_request_target when lockfiles are unchanged", async () => {
+  const previousEvent = process.env.GITHUB_EVENT_NAME;
+  process.env.GITHUB_EVENT_NAME = "pull_request_target";
+
+  const mockRuntime = new MockActionRuntime();
+  mockRuntime.inputs["bump"] = "patch";
+  const calls: ExecCall[] = [];
+
+  const outputs = new Map<
+    string,
+    { exitCode: number; stdout: string; stderr: string }
+  >([
+    [
+      "node -p require('./package.json').version",
+      { exitCode: 0, stdout: "1.2.3\n", stderr: "" },
+    ],
+    [
+      "git diff --quiet v1.2.3 -- bun.lock package-lock.json yarn.lock pnpm-lock.yaml",
+      { exitCode: 0, stdout: "", stderr: "" },
+    ],
+  ]);
+
+  try {
+    const composition = createActionComposition(
+      {
+        githubContext: { repo: { owner: "owner", repo: "repo" } },
+        dependencies: {
+          createExecClient: () => createMockExec(calls, outputs),
+        },
+      },
+      { runtime: mockRuntime },
+    );
+
+    await runComposedAction(composition, AutoTagWorkflow);
+
+    expect(
+      calls.some(
+        (c) =>
+          c.cmd === "git" &&
+          c.args[0] === "commit" &&
+          c.args.includes("chore(release): v1.2.4"),
+      ),
+    ).toBe(false);
+    expect(mockRuntime.logs).toContainEqual({
+      level: "info",
+      message: "No lockfile changes since v1.2.3; skipping tag.",
+    });
+  } finally {
+    if (previousEvent === undefined) {
+      delete process.env.GITHUB_EVENT_NAME;
+    } else {
+      process.env.GITHUB_EVENT_NAME = previousEvent;
+    }
+  }
+});
+
+test("AutoTagWorkflow tags pull_request_target when lockfiles changed", async () => {
+  const previousEvent = process.env.GITHUB_EVENT_NAME;
+  process.env.GITHUB_EVENT_NAME = "pull_request_target";
+
+  const mockRuntime = new MockActionRuntime();
+  mockRuntime.inputs["bump"] = "patch";
+  const calls: ExecCall[] = [];
+
+  const outputs = new Map<
+    string,
+    { exitCode: number; stdout: string; stderr: string }
+  >([
+    [
+      "node -p require('./package.json').version",
+      { exitCode: 0, stdout: "1.2.3\n", stderr: "" },
+    ],
+    [
+      "git diff --quiet v1.2.3 -- bun.lock package-lock.json yarn.lock pnpm-lock.yaml",
+      { exitCode: 1, stdout: "", stderr: "" },
+    ],
+    [
+      "git rev-parse -q --verify refs/tags/v1.2.4",
+      { exitCode: 1, stdout: "", stderr: "" },
+    ],
+    ["git diff --cached --quiet", { exitCode: 1, stdout: "", stderr: "" }],
+    [
+      "git rev-parse -q --verify refs/tags/v1.2.4",
+      { exitCode: 1, stdout: "", stderr: "" },
+    ],
+  ]);
+
+  try {
+    const composition = createActionComposition(
+      {
+        githubContext: { repo: { owner: "owner", repo: "repo" } },
+        dependencies: {
+          createExecClient: () => createMockExec(calls, outputs),
+        },
+      },
+      { runtime: mockRuntime },
+    );
+
+    await runComposedAction(composition, AutoTagWorkflow);
+
+    expect(
+      calls.some(
+        (c) =>
+          c.cmd === "git" && c.args[0] === "tag" && c.args.includes("v1.2.4"),
+      ),
+    ).toBe(true);
+  } finally {
+    if (previousEvent === undefined) {
+      delete process.env.GITHUB_EVENT_NAME;
+    } else {
+      process.env.GITHUB_EVENT_NAME = previousEvent;
+    }
+  }
+});

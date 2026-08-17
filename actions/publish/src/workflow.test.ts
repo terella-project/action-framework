@@ -61,6 +61,11 @@ test("PublishWorkflow verifies, tests, and publishes", async () => {
   expect(calls.some((c) => c.cmd === "bun" && c.args.includes("test"))).toBe(
     true,
   );
+  expect(
+    calls.some(
+      (c) => c.cmd === "bun" && c.args[0] === "run" && c.args.includes("build"),
+    ),
+  ).toBe(true);
   expect(calls.some((c) => c.cmd === "npm" && c.args.includes("publish"))).toBe(
     true,
   );
