@@ -1,6 +1,10 @@
 name: Dependabot auto-merge
 
-on: pull_request
+# pull_request_target (not pull_request): Dependabot PRs cannot read Actions
+# secrets on pull_request. Merges must use RELEASE_TOKEN — GITHUB_TOKEN merges
+# are attributed to github-actions[bot] and suppress push / pull_request_target
+# workflows, so Auto Tag never runs after Dependabot lands.
+on: pull_request_target
 
 permissions:
   contents: write
@@ -11,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
+      # Base branch only — never checkout the PR head on pull_request_target.
       - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
@@ -28,9 +33,7 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
-          # Dependabot PRs only receive Dependabot secrets, not Actions
-          # secrets like RELEASE_TOKEN — use the workflow GITHUB_TOKEN.
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Enable auto-merge for non-major updates
         if: >-
@@ -42,4 +45,4 @@ jobs:
           update-type: ${{ steps.metadata.outputs.update-type }}
           pr-url: ${{ github.event.pull_request.html_url }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}

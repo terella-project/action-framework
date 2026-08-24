@@ -39,3 +39,7 @@ jobs:
           path: actions
 
       - uses: ./actions/publish
+        env:
+          # Optional classic-auth fallback when Trusted Publisher is unset.
+          # Empty/missing secret must not be treated as configured auth.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

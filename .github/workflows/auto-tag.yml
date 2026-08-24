@@ -9,8 +9,9 @@ on:
       - "package-lock.json"
       - "yarn.lock"
       - "pnpm-lock.yaml"
-  # Dependabot auto-merge uses GITHUB_TOKEN, which does not fire push
-  # workflows. pull_request_target closed still runs and can tag.
+  # Backup when a Dependabot PR is merged by a human / non-GITHUB_TOKEN actor.
+  # Dependabot auto-merge uses RELEASE_TOKEN so the push trigger above fires;
+  # GITHUB_TOKEN merges suppress both push and pull_request_target runs.
   pull_request_target:
     types: [closed]
   workflow_dispatch:

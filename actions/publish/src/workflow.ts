@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
   ACTION_COMPONENTS,
   type ActionRuntime,
@@ -8,7 +10,7 @@ import {
 
 /**
  * Publish action: verifies tag matches package.json version, runs tests,
- * and publishes to npm via trusted publishing (OIDC).
+ * and publishes to npm via trusted publishing (OIDC) or NPM_TOKEN fallback.
  *
  * Replaces .github/workflows/publish.yml inline shell steps.
  */
@@ -61,23 +63,85 @@ export class PublishWorkflow {
   }
 
   private async publish(exec: ExecClient): Promise<void> {
-    // setup-node registry-url points NPM_CONFIG_USERCONFIG at an .npmrc with
-    // _authToken, which keeps npm on classic auth and skips OIDC.
-    delete process.env.NODE_AUTH_TOKEN;
-    delete process.env.NPM_TOKEN;
-    delete process.env.NPM_CONFIG_USERCONFIG;
-
     this.runtime.info("Building package so npm sees dist before pack...");
     await exec.exec("bun", ["run", "build"]);
 
     const npmVersion = await exec.getExecOutput("npm", ["--version"]);
     this.runtime.info(`npm ${npmVersion.stdout.trim()}`);
-    this.runtime.info(
-      `OIDC endpoint present: ${Boolean(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)}`,
+
+    const token = (
+      process.env.NODE_AUTH_TOKEN ||
+      process.env.NPM_TOKEN ||
+      ""
+    ).trim();
+
+    if (token) {
+      await this.publishWithToken(exec, token);
+      return;
+    }
+
+    await this.publishWithOidc(exec);
+  }
+
+  private async publishWithToken(
+    exec: ExecClient,
+    token: string,
+  ): Promise<void> {
+    this.runtime.info("Publishing with NPM_TOKEN (classic auth)...");
+    const npmrc = join(process.cwd(), ".npmrc");
+    await writeFile(
+      npmrc,
+      [
+        "registry=https://registry.npmjs.org/",
+        `//registry.npmjs.org/:_authToken=${token}`,
+        "",
+      ].join("\n"),
+      { mode: 0o600 },
     );
 
+    try {
+      await exec.exec("npm", ["publish", "--access", "public"]);
+      this.runtime.info("Published.");
+    } catch (error) {
+      this.runtime.setFailed(
+        "npm publish with NPM_TOKEN failed. Check that the token can publish @terella/action-framework.",
+      );
+      throw error;
+    }
+  }
+
+  private async publishWithOidc(exec: ExecClient): Promise<void> {
+    // setup-node registry-url points NPM_CONFIG_USERCONFIG at an .npmrc with
+    // _authToken, which keeps npm on classic auth and skips OIDC.
+    // Empty NODE_AUTH_TOKEN / NPM_TOKEN must not be present either.
+    delete process.env.NODE_AUTH_TOKEN;
+    delete process.env.NPM_TOKEN;
+    delete process.env.NPM_CONFIG_USERCONFIG;
+
+    const oidcReady = Boolean(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+    this.runtime.info(`OIDC endpoint present: ${oidcReady}`);
+
+    if (!oidcReady) {
+      const message =
+        "No NPM_TOKEN and no GitHub OIDC endpoint. Grant id-token: write, or set secrets.NPM_TOKEN.";
+      this.runtime.setFailed(message);
+      throw new Error(message);
+    }
+
     this.runtime.info("Publishing via npm trusted publishing (OIDC)...");
-    await exec.exec("npm", ["publish", "--access", "public"]);
-    this.runtime.info("Published.");
+    try {
+      await exec.exec("npm", ["publish", "--access", "public", "--provenance"]);
+      this.runtime.info("Published.");
+    } catch (error) {
+      this.runtime.setFailed(
+        [
+          "npm OIDC publish failed (ENEEDAUTH usually means Trusted Publisher is not configured).",
+          "On npmjs.com → @terella/action-framework → Settings → Trusted Publisher,",
+          "add GitHub Actions: terella-project/action-framework, workflow publish.yml.",
+          "Or set repository secret NPM_TOKEN for classic auth fallback.",
+        ].join(" "),
+      );
+      throw error;
+    }
   }
 }
