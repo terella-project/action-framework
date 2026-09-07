@@ -52,7 +52,7 @@
     "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.1.1",
-    "@di-framework/core": "^4.3.1"
+    "@di-framework/core": "^5.2.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
