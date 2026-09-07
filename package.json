@@ -7,7 +7,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "terella-action": "./dist/cli/index.js"
+    "terella-action": "dist/cli/index.js"
   },
   "exports": {
     ".": {
