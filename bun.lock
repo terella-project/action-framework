@@ -8,7 +8,7 @@
         "@actions/core": "^3.0.1",
         "@actions/exec": "^3.0.0",
         "@actions/github": "^9.1.1",
-        "@di-framework/core": "^4.3.1",
+        "@di-framework/core": "^5.2.2",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.5.7",
@@ -84,7 +84,7 @@
 
     "@bufbuild/protoplugin": ["@bufbuild/protoplugin@2.13.0", "", { "dependencies": { "@bufbuild/protobuf": "2.13.0", "@typescript/vfs": "^1.6.2", "typescript": "5.4.5" } }, "sha512-32eMChKaL/A8Hh5AfMmXSdnuyznN85uoEjoyWiWeRrvtQOtpqX/v1R9PDe0g9vMIgzznK9inMT3CUaal0kjLUQ=="],
 
-    "@di-framework/core": ["@di-framework/core@4.3.3", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-YOyaFVIPrKTUkj9c05b7mGWXQQwbEaVelAe4GWcpS12CGgK7qa7jLgu/gZEBrqA26paPx+oiqKGDLuV0twOwqw=="],
+    "@di-framework/core": ["@di-framework/core@5.2.2", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-6XgiZmrNeka6Z8YNYsblWKqXJFwMTDm9eWY5dmF1YIDgbAVBmk8420H6HWe+arHnIBwv6SRhbYFN5KKLqt/PMg=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
 
