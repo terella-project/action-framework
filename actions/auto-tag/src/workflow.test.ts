@@ -11,6 +11,27 @@ interface ExecCall {
   args: string[];
 }
 
+async function withEventName<T>(
+  eventName: string | undefined,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const previousEvent = process.env.GITHUB_EVENT_NAME;
+  if (eventName === undefined) {
+    delete process.env.GITHUB_EVENT_NAME;
+  } else {
+    process.env.GITHUB_EVENT_NAME = eventName;
+  }
+  try {
+    return await fn();
+  } finally {
+    if (previousEvent === undefined) {
+      delete process.env.GITHUB_EVENT_NAME;
+    } else {
+      process.env.GITHUB_EVENT_NAME = previousEvent;
+    }
+  }
+}
+
 function createMockExec(
   calls: ExecCall[],
   outputs: Map<string, { exitCode: number; stdout: string; stderr: string }>,
@@ -58,17 +79,19 @@ test("AutoTagWorkflow bumps patch version and tags", async () => {
     ],
   ]);
 
-  const composition = createActionComposition(
-    {
-      githubContext: { repo: { owner: "owner", repo: "repo" } },
-      dependencies: {
-        createExecClient: () => createMockExec(calls, outputs),
+  await withEventName("push", async () => {
+    const composition = createActionComposition(
+      {
+        githubContext: { repo: { owner: "owner", repo: "repo" } },
+        dependencies: {
+          createExecClient: () => createMockExec(calls, outputs),
+        },
       },
-    },
-    { runtime: mockRuntime },
-  );
+      { runtime: mockRuntime },
+    );
 
-  await runComposedAction(composition, AutoTagWorkflow);
+    await runComposedAction(composition, AutoTagWorkflow);
+  });
 
   // Verify version was read
   expect(calls.some((c) => c.cmd === "node" && c.args[0] === "-p")).toBe(true);
@@ -143,26 +166,25 @@ test("AutoTagWorkflow fails when tag already exists", async () => {
     ],
   ]);
 
-  const composition = createActionComposition(
-    {
-      githubContext: { repo: { owner: "owner", repo: "repo" } },
-      dependencies: {
-        createExecClient: () => createMockExec(calls, outputs),
+  await withEventName("push", async () => {
+    const composition = createActionComposition(
+      {
+        githubContext: { repo: { owner: "owner", repo: "repo" } },
+        dependencies: {
+          createExecClient: () => createMockExec(calls, outputs),
+        },
       },
-    },
-    { runtime: mockRuntime },
-  );
+      { runtime: mockRuntime },
+    );
 
-  await expect(
-    runComposedAction(composition, AutoTagWorkflow),
-  ).rejects.toThrow();
+    await expect(
+      runComposedAction(composition, AutoTagWorkflow),
+    ).rejects.toThrow();
+  });
   expect(mockRuntime.failedMessage).toBe("tag v1.2.4 already exists");
 });
 
 test("AutoTagWorkflow skips pull_request_target when lockfiles are unchanged", async () => {
-  const previousEvent = process.env.GITHUB_EVENT_NAME;
-  process.env.GITHUB_EVENT_NAME = "pull_request_target";
-
   const mockRuntime = new MockActionRuntime();
   mockRuntime.inputs["bump"] = "patch";
   const calls: ExecCall[] = [];
@@ -181,7 +203,7 @@ test("AutoTagWorkflow skips pull_request_target when lockfiles are unchanged", a
     ],
   ]);
 
-  try {
+  await withEventName("pull_request_target", async () => {
     const composition = createActionComposition(
       {
         githubContext: { repo: { owner: "owner", repo: "repo" } },
@@ -206,19 +228,10 @@ test("AutoTagWorkflow skips pull_request_target when lockfiles are unchanged", a
       level: "info",
       message: "No lockfile changes since v1.2.3; skipping tag.",
     });
-  } finally {
-    if (previousEvent === undefined) {
-      delete process.env.GITHUB_EVENT_NAME;
-    } else {
-      process.env.GITHUB_EVENT_NAME = previousEvent;
-    }
-  }
+  });
 });
 
 test("AutoTagWorkflow tags pull_request_target when lockfiles changed", async () => {
-  const previousEvent = process.env.GITHUB_EVENT_NAME;
-  process.env.GITHUB_EVENT_NAME = "pull_request_target";
-
   const mockRuntime = new MockActionRuntime();
   mockRuntime.inputs["bump"] = "patch";
   const calls: ExecCall[] = [];
@@ -246,7 +259,7 @@ test("AutoTagWorkflow tags pull_request_target when lockfiles changed", async ()
     ],
   ]);
 
-  try {
+  await withEventName("pull_request_target", async () => {
     const composition = createActionComposition(
       {
         githubContext: { repo: { owner: "owner", repo: "repo" } },
@@ -265,11 +278,5 @@ test("AutoTagWorkflow tags pull_request_target when lockfiles changed", async ()
           c.cmd === "git" && c.args[0] === "tag" && c.args.includes("v1.2.4"),
       ),
     ).toBe(true);
-  } finally {
-    if (previousEvent === undefined) {
-      delete process.env.GITHUB_EVENT_NAME;
-    } else {
-      process.env.GITHUB_EVENT_NAME = previousEvent;
-    }
-  }
+  });
 });
