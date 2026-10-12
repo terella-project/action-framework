@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   ACTION_COMPONENTS,
@@ -110,6 +110,22 @@ export class PublishWorkflow {
     }
   }
 
+  private async removeProjectAuthNpmrc(): Promise<void> {
+    const npmrc = join(process.cwd(), ".npmrc");
+    let contents: string;
+    try {
+      contents = await readFile(npmrc, "utf8");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    }
+    if (!contents.includes("_authToken")) return;
+    await rm(npmrc, { force: true });
+    this.runtime.info(
+      "Removed project .npmrc that set _authToken so npm OIDC can run.",
+    );
+  }
+
   private async publishWithOidc(exec: ExecClient): Promise<void> {
     // setup-node registry-url points NPM_CONFIG_USERCONFIG at an .npmrc with
     // _authToken, which keeps npm on classic auth and skips OIDC.
@@ -117,6 +133,10 @@ export class PublishWorkflow {
     delete process.env.NODE_AUTH_TOKEN;
     delete process.env.NPM_TOKEN;
     delete process.env.NPM_CONFIG_USERCONFIG;
+    // `bun test` runs in this job before publish. The NPM_TOKEN test writes a
+    // project .npmrc with a fake _authToken, and npm then uses that instead of
+    // OIDC (scoped publish comes back as E404).
+    await this.removeProjectAuthNpmrc();
 
     const oidcReady = Boolean(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
     this.runtime.info(`OIDC endpoint present: ${oidcReady}`);

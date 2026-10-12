@@ -1,10 +1,15 @@
 import { afterEach, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
   createActionComposition,
   MockActionRuntime,
   runComposedAction,
 } from "../../../src/index";
 import { PublishWorkflow } from "./workflow";
+
+const projectNpmrc = join(process.cwd(), ".npmrc");
 
 function createContext(
   outputEntries: [
@@ -36,11 +41,12 @@ function createContext(
   );
 }
 
-afterEach(() => {
+afterEach(async () => {
   delete process.env.GITHUB_REF_NAME;
   delete process.env.NODE_AUTH_TOKEN;
   delete process.env.NPM_TOKEN;
   delete process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+  await rm(projectNpmrc, { force: true });
 });
 
 test("PublishWorkflow verifies, tests, and publishes via OIDC", async () => {
@@ -73,6 +79,43 @@ test("PublishWorkflow verifies, tests, and publishes via OIDC", async () => {
     calls.some(
       (c) => c.cmd === "bun" && c.args[0] === "run" && c.args.includes("build"),
     ),
+  ).toBe(true);
+  expect(
+    calls.some(
+      (c) =>
+        c.cmd === "npm" &&
+        c.args.includes("publish") &&
+        c.args.includes("--provenance"),
+    ),
+  ).toBe(true);
+});
+
+test("PublishWorkflow removes project .npmrc auth before OIDC publish", async () => {
+  const mockRuntime = new MockActionRuntime();
+  process.env.GITHUB_REF_NAME = "v2.0.1";
+  process.env.ACTIONS_ID_TOKEN_REQUEST_URL = "https://example.test/oidc";
+  await writeFile(
+    projectNpmrc,
+    "//registry.npmjs.org/:_authToken=npm_test_token\n",
+  );
+
+  const calls: { cmd: string; args: string[] }[] = [];
+  const composition = createContext(
+    [
+      [
+        "node -p require('./package.json').version",
+        { exitCode: 0, stdout: "2.0.1\n", stderr: "" },
+      ],
+    ],
+    calls,
+    mockRuntime,
+  );
+
+  await runComposedAction(composition, PublishWorkflow);
+
+  expect(existsSync(projectNpmrc)).toBe(false);
+  expect(
+    mockRuntime.logs.some((l) => l.message.includes("Removed project .npmrc")),
   ).toBe(true);
   expect(
     calls.some(

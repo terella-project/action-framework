@@ -7,4 +7,5 @@ lib/
 .env
 .env.*
 !.env.example
+.npmrc
 .hermes
